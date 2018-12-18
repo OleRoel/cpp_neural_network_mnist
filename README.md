@@ -1,9 +1,7 @@
 # cpp_neural_network_mnist
-This is a coding experiment to compare speed of a C++ implementation for training a MNIST network against a Numpy/Scikit implementation in a Jupyter notebook.
+This is a coding experiment to compare speed of a C++ implementation for training a MNIST network against a Python implementation using Numpy/Scikit in a Jupyter notebook.
 
 The original code can be found in the "Code for the Make Your Own Neural Network book" in Tariq Rashid's repository here: https://github.com/makeyourownneuralnetwork/makeyourownneuralnetwork
-
-The matrix operations for the training are performed with help of the cblas library http://www.netlib.org/blas/
 
 The MNIST datasets for training and testing the neural network can be found here: https://pjreddie.com/projects/mnist-in-csv/
 
@@ -42,12 +40,12 @@ nvcc mnist_cublas.cu -lcublas -O3 -Xptxas -O3,-v
 ```
 
 ## Performance
-| Flavour| Performance | Train Time [s] | Test Time [s] |
-| ------ |------------:| ---------------:|-------------:|
-| cblas  |      0.9673 |          80.258 |        0.791 |
-| MKL    |      0.9671 |          53.739 |        0.600 |
-| cuBLAS |      0.9624 |          66.196 |        0.735 |
-| Python |      0.9668 |         260.706 |        1.362 |
+| Flavour    | Performance | Train Time [s] | Test Time [s] |
+| ---------- |------------:| ---------------:|-------------:|
+| **cblas**  |      0.9673 |          80.258 |        0.791 |
+| **MKL**    |      0.9671 |          53.739 |        0.600 |
+| **cuBLAS** |      0.9624 |          66.196 |        0.735 |
+| **Python** |      0.9668 |         260.706 |        1.362 |
 
 MKL needs 18% less time for the training than cuBLAS do – I guess there is room for improvement for my CUDA implementation.
 

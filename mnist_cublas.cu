@@ -6,8 +6,6 @@
   license is GPLv3
 */
 
-// CUDA runtime
-// #include <cuda_runtime.h>
 #include <cublas_v2.h>
 
 #include <iostream>
@@ -275,7 +273,7 @@ class NeuralNetwork : CuBLASBase
             learningrate{learningrate}
             {
                 cublasCreate(&handle);
-#if 1
+#if 0
                 wih.read("wih_col_major.csv");
                 wih.read("who_col_major.csv");
 #else
