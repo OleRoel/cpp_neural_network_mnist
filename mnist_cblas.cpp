@@ -50,7 +50,7 @@ template<int M, int N> void feed_forward(const double* A, const double* x, std::
 
 template<int M, int N> void hidden_layer_error(const double* A, const double* x, std::vector<double>& result) {
     double* y {&result[0]};
-    cblas_dgemv(CblasColMajor, CblasNoTrans, M, N, 1.0, A, M, x, 1, 0.0, y, 1);
+    cblas_dgemv(CblasColMajor, CblasTrans, M, N, 1.0, A, M, x, 1, 0.0, y, 1);
 }
 
 template<int M, int N> void backpropagate(const std::vector<double>& vec_in,
