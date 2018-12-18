@@ -49,7 +49,6 @@ template<int M, int N> void feed_forward(const double* A, const double* x, std::
 } 
 
 template<int M, int N> void hidden_layer_error(const double* A, const double* x, std::vector<double>& result) {
-    // std::cout << "hidden_layer_error" << std::endl;
     double* y {&result[0]};
     cblas_dgemv(CblasColMajor, CblasNoTrans, M, N, 1.0, A, M, x, 1, 0.0, y, 1);
 }
@@ -112,76 +111,6 @@ void dgemv(const double *A, const double *u, double *v, const int n, const int m
         v[i] = sum;
     }
 }
-
-void test() {
-    std::vector<double> m1(12), m2(12), v1(3), r(3);
-
-    read_matrix("mat1.txt", m1);
-    read_matrix("mat2.txt", m2);
-    read_matrix("vec1.txt", v1);
-
-    print_matrix("matrix m1", m1, 3, 4);
-    print_matrix("matrix m2", m2, 4, 3);
-    print_vector("matrix m1", m1);
-    print_vector("matrix m2", m2);
-    print_vector("vector", v1);
-
-    double* A1 {&m1[0]};
-    double* A2 {&m2[0]};
-    double* x {&v1[0]};
-    double* y {&r[0]};
-    
-    // std::vector<double> expected{1, -1, -3, -30};
-    std::vector<double> expected{16, 17, 18};
-    print_vector("expected", expected);
-    std::cout << std::endl;
-
-    cblas_dgemv(CblasColMajor, CblasNoTrans, 3, 4, 1.0, A2, 3, x, 1, 0.0, y, 1);
-    if (r == expected)
-        print_vector("1 result cblas_dgemv", r);
-    
-    cblas_dgemv(CblasColMajor, CblasNoTrans, 4, 3, 1.0, A2, 4, x, 1, 0.0, y, 1);
-    if (r == expected)
-        print_vector("2 result cblas_dgemv", r);
-    
-    cblas_dgemv(CblasColMajor, CblasTrans, 4, 3, 1.0, A2, 4, x, 1, 0.0, y, 1);
-    if (r == expected)
-        print_vector("3 result cblas_dgemv", r);
-    
-    cblas_dgemv(CblasColMajor, CblasTrans, 3, 4, 1.0, A2, 3, x, 1, 0.0, y, 1);
-    if (r == expected)
-        print_vector("4 result cblas_dgemv", r);
-    
-    cblas_dgemv(CblasColMajor, CblasNoTrans, 3, 4, 1.0, A1, 3, x, 1, 0.0, y, 1);
-    if (r == expected)
-        print_vector("5 result cblas_dgemv", r);
-    
-    cblas_dgemv(CblasColMajor, CblasNoTrans, 3, 4, 1.0, A1, 3, x, 1, 0.0, y, 1);
-    if (r == expected)
-        print_vector("6 result cblas_dgemv", r);
-    
-    cblas_dgemv(CblasColMajor, CblasNoTrans, 3, 4, 1.0, A1, 3, x, 1, 0.0, y, 1);
-    if (r == expected)
-        print_vector("7 result cblas_dgemv", r);
-
-    dgemv(A2, x, y, 4, 3);
-    if (r == expected)
-        print_vector("8 result dgemv", r);
-
-    cblas_dgemv(CblasRowMajor, CblasTrans, 3, 4, 1.0, A1, 4, x, 1, 0.0, y, 1);
-    if (r == expected)
-        print_vector("9 result", r);
-
-    // std::vector<double> errs{-0.453399, -0.639148, -0.492974, -0.257092, -0.57228, 0.615142, -0.539623, -0.324232, -0.484188, -0.377392};
-    // std::vector<double> res(errs.size());
-
-    // std::vector<double> who(hiddennodes*outputnodes);
-    // read_matrix("who.out", who);
-    // // print_matrix("matrix", who, outputnodes, hiddennodes);
-    // hidden_layer_error<outputnodes, hiddennodes>(&who[0], &errs[0], hidden_errors);
-    // print_vector("hidden_errors", hidden_errors);
-}
-
 
 template<int inputnodes, int hiddennodes, int outputnodes>
 class NeuralNetwork
@@ -255,7 +184,7 @@ void run_training(MNIST_NEURAL_NETWORK& nn) {
     std::ifstream infile("mnist_train.csv");
     std::string line;
     std::string delims = ",";
-    std::size_t ii {0};
+    // std::size_t ii {0};
     while (std::getline(infile, line)) {
         // if (ii++ % 100 == 0) {
         //     std::cout << "+" << std::flush;
@@ -311,7 +240,6 @@ void run_test(const MNIST_NEURAL_NETWORK& nn) {
 
 int main(void)
 {
-#if 1
     constexpr int epochs = 10;
 
     MNIST_NEURAL_NETWORK nn(learingrate);
@@ -334,7 +262,4 @@ int main(void)
     std::cout << "test took "
               << std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count()
               << " milliseconds" << std::endl;
-#else
-    test();
-#endif
 }
