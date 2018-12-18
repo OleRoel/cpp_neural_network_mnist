@@ -10,13 +10,13 @@ The MNIST datasets for training and testing the neural network can be found here
 The same training is performed with different flavours of the same code.
 
 ### BLAS
-Uses (BLAS)[http://www.netlib.org/blas/] library for optimizing matrix operations with help of the cblas library.
+Uses [BLAS](http://www.netlib.org/blas/) library for optimizing matrix operations with help of the cblas library.
 
 ### MKL
-Uses (Intel® Math Kernel Library)[https://software.intel.com/en-us/mkl] and their cblas library for matrix operations optimized against Intel processors.
+Uses [Intel® Math Kernel Library](https://software.intel.com/en-us/mkl) and their cblas library for matrix operations optimized against Intel processors.
 
 ### CUDA and cuBLAS
-Uses (NVIDIA CUDA)[https://en.wikipedia.org/wiki/CUDA] and (NVIDIA cuBLAS)[https://docs.nvidia.com/cuda/cublas/index.html] to perform training on a GPU.
+Uses [NVIDIA CUDA](https://en.wikipedia.org/wiki/CUDA) and [NVIDIA cuBLAS](https://docs.nvidia.com/cuda/cublas/index.html) to perform training on a GPU.
 
 ## Building
 
