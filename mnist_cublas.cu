@@ -275,7 +275,7 @@ class NeuralNetwork : CuBLASBase
             learningrate{learningrate}
             {
                 cublasCreate(&handle);
-#if 1
+#if 0
                 wih.read("wih_col_major.csv");
                 wih.read("who_col_major.csv");
 #else
