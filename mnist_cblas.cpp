@@ -137,7 +137,7 @@ class NeuralNetwork
             hidden_errors(hiddennodes),
             output_errors(outputnodes)
             {
-#if 1
+#if 0
                 read_matrix("wih_col_major.csv", wih);
                 read_matrix("who_col_major.csv", who);
 #else
