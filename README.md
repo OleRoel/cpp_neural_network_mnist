@@ -42,27 +42,11 @@ nvcc mnist_cublas.cu -lcublas -O3 -Xptxas -O3,-v
 ```
 
 ## Performance
-
-**cblas:**
-```sh
-performance = 0.8418
-training took 75766 milliseconds
-test took 813 milliseconds
-```
-
-**MKL**
-```sh
-performance = 0.9671
-training took 53739 milliseconds
-test took 600 milliseconds
-```
-
-**cuBLAS**
-```sh
-performance = 0.9624
-training took 66196 milliseconds
-test took 735 milliseconds
-```
+| Flavour| Performance | Train Time [ms] | Test Time [ms] |
+| ------ |------------:| ---------------:|---------------:|
+| cblas  |      0.9673 |           80258 |            791 |
+| MKL    |      0.9671 |           53739 |            600 |
+| cuBLAS |      0.9624 |           66196 |            735 |
 
 MKL needs 18% less time for the training than cuBLAS do – I guess there is room for improvement for my CUDA implementation.
 
