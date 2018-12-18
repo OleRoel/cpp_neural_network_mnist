@@ -21,6 +21,7 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>                      /* split */
 #include <boost/algorithm/string/classification.hpp>       /* is_any_of */
+#include <chrono>
 
 template<int inputnodes, int hiddennodes, int outputnodes> class NeuralNetwork;
 
@@ -38,32 +39,34 @@ void print_matrix(const std::string& name, const std::vector<double>& matrix, in
 void read_matrix(const std::string& filename, std::vector<double>& result);
 
 auto sigmoid = [](auto d) { return (1.0 / (1.0 + std::exp(-d))); };
+auto derive = [](auto a, auto b) { return a * b * (1.0 - b); };
 
 template<int M, int N> void feed_forward(const double* A, const double* x, std::vector<double>& result) {
     double* y {&result[0]};
 
-    cblas_dgemv(CblasRowMajor, CblasNoTrans, M, N, 1.0, A, N, x, 1, 0.0, y, 1);
+    cblas_dgemv(CblasColMajor, CblasNoTrans, M, N, 1.0, A, M, x, 1, 0.0, y, 1);
     std::transform(result.begin(), result.end(), result.begin(), sigmoid);
 } 
 
 template<int M, int N> void hidden_layer_error(const double* A, const double* x, std::vector<double>& result) {
+    // std::cout << "hidden_layer_error" << std::endl;
     double* y {&result[0]};
-    cblas_dgemv(CblasRowMajor, CblasTrans, M, N, 1.0, A, N, x, 1, 0.0, y, 1);
+    cblas_dgemv(CblasColMajor, CblasNoTrans, M, N, 1.0, A, M, x, 1, 0.0, y, 1);
 }
 
-template<int M, int N> void backpropagate(const std::vector<double>& vec_in, const std::vector<double>& vec_out, const std::vector<double>& vec_err, double learningrate, std::vector<double>& result) {
+template<int M, int N> void backpropagate(const std::vector<double>& vec_in,
+                                            const std::vector<double>& vec_out,
+                                            const std::vector<double>& vec_err,
+                                            double learningrate,
+                                            std::vector<double>& result) {
     std::vector<double> vec(M);
-
-    for (std::size_t i = 0; i != vec_out.size(); ++i) {
-        vec[i] = vec_err[i] * vec_out[i] * (1.0 - vec_out[i]);
-    }
+    std::transform(vec_err.begin(), vec_err.end(), vec_out.begin(), vec.begin(), derive);
 
     const double* v {&vec[0]};
     const double* w {&vec_in[0]};
     double* C {&result[0]};
-    const int ldc = N;
     
-    cblas_dger(CblasRowMajor, M, N, learningrate, v, 1, w, 1, C, N);
+    cblas_dger(CblasColMajor, M, N, learningrate, v, 1, w, 1, C, M);
 }
 
 void read_matrix(const std::string& filename, std::vector<double>& result) {
@@ -100,6 +103,86 @@ void print_matrix(const std::string& name, const std::vector<double>& matrix, in
     std::cout << std::endl;
 }
 
+void dgemv(const double *A, const double *u, double *v, const int n, const int m) {
+    for(int i=0; i<n; i++) {
+        double sum = 0;
+        for(int j=0; j<m; j++) {
+            sum += A[m*i+j]*u[j];
+        }
+        v[i] = sum;
+    }
+}
+
+void test() {
+    std::vector<double> m1(12), m2(12), v1(3), r(3);
+
+    read_matrix("mat1.txt", m1);
+    read_matrix("mat2.txt", m2);
+    read_matrix("vec1.txt", v1);
+
+    print_matrix("matrix m1", m1, 3, 4);
+    print_matrix("matrix m2", m2, 4, 3);
+    print_vector("matrix m1", m1);
+    print_vector("matrix m2", m2);
+    print_vector("vector", v1);
+
+    double* A1 {&m1[0]};
+    double* A2 {&m2[0]};
+    double* x {&v1[0]};
+    double* y {&r[0]};
+    
+    // std::vector<double> expected{1, -1, -3, -30};
+    std::vector<double> expected{16, 17, 18};
+    print_vector("expected", expected);
+    std::cout << std::endl;
+
+    cblas_dgemv(CblasColMajor, CblasNoTrans, 3, 4, 1.0, A2, 3, x, 1, 0.0, y, 1);
+    if (r == expected)
+        print_vector("1 result cblas_dgemv", r);
+    
+    cblas_dgemv(CblasColMajor, CblasNoTrans, 4, 3, 1.0, A2, 4, x, 1, 0.0, y, 1);
+    if (r == expected)
+        print_vector("2 result cblas_dgemv", r);
+    
+    cblas_dgemv(CblasColMajor, CblasTrans, 4, 3, 1.0, A2, 4, x, 1, 0.0, y, 1);
+    if (r == expected)
+        print_vector("3 result cblas_dgemv", r);
+    
+    cblas_dgemv(CblasColMajor, CblasTrans, 3, 4, 1.0, A2, 3, x, 1, 0.0, y, 1);
+    if (r == expected)
+        print_vector("4 result cblas_dgemv", r);
+    
+    cblas_dgemv(CblasColMajor, CblasNoTrans, 3, 4, 1.0, A1, 3, x, 1, 0.0, y, 1);
+    if (r == expected)
+        print_vector("5 result cblas_dgemv", r);
+    
+    cblas_dgemv(CblasColMajor, CblasNoTrans, 3, 4, 1.0, A1, 3, x, 1, 0.0, y, 1);
+    if (r == expected)
+        print_vector("6 result cblas_dgemv", r);
+    
+    cblas_dgemv(CblasColMajor, CblasNoTrans, 3, 4, 1.0, A1, 3, x, 1, 0.0, y, 1);
+    if (r == expected)
+        print_vector("7 result cblas_dgemv", r);
+
+    dgemv(A2, x, y, 4, 3);
+    if (r == expected)
+        print_vector("8 result dgemv", r);
+
+    cblas_dgemv(CblasRowMajor, CblasTrans, 3, 4, 1.0, A1, 4, x, 1, 0.0, y, 1);
+    if (r == expected)
+        print_vector("9 result", r);
+
+    // std::vector<double> errs{-0.453399, -0.639148, -0.492974, -0.257092, -0.57228, 0.615142, -0.539623, -0.324232, -0.484188, -0.377392};
+    // std::vector<double> res(errs.size());
+
+    // std::vector<double> who(hiddennodes*outputnodes);
+    // read_matrix("who.out", who);
+    // // print_matrix("matrix", who, outputnodes, hiddennodes);
+    // hidden_layer_error<outputnodes, hiddennodes>(&who[0], &errs[0], hidden_errors);
+    // print_vector("hidden_errors", hidden_errors);
+}
+
+
 template<int inputnodes, int hiddennodes, int outputnodes>
 class NeuralNetwork
 {
@@ -125,18 +208,24 @@ class NeuralNetwork
             hidden_errors(hiddennodes),
             output_errors(outputnodes)
             {
-                // read_matrix("wih.out", wih);
-                // read_matrix("who.out", who);
+#if 1
+                read_matrix("wih_col_major.csv", wih);
+                read_matrix("who_col_major.csv", who);
+#else
                 std::random_device rd{};
                 std::mt19937 gen{rd()};
 
-                double sigma = std::pow(inputnodes, -0.5);
-                std::normal_distribution<> d{0.0, sigma};
-
-                std::generate(wih.begin(), wih.end(), [&gen, &d]() mutable { return d(gen); });
-
-                sigma = std::pow(outputnodes, -0.5);
-                std::generate(who.begin(), who.end(), [&gen, &d]() mutable { return d(gen); });
+                {
+                    double sigma = std::pow(inputnodes, -0.5);
+                    std::normal_distribution<> d{0.0, sigma};
+                    std::generate(wih.begin(), wih.end(), [&gen, &d]() mutable { return d(gen); });
+                }
+                {
+                    double sigma = std::pow(outputnodes, -0.5);
+                    std::normal_distribution<> d{0.0, sigma};
+                    std::generate(who.begin(), who.end(), [&gen, &d]() mutable { return d(gen); });
+                }
+#endif
             }
         ~NeuralNetwork() {
         }
@@ -168,9 +257,9 @@ void run_training(MNIST_NEURAL_NETWORK& nn) {
     std::string delims = ",";
     std::size_t ii {0};
     while (std::getline(infile, line)) {
-        if (ii++ % 100 == 0) {
-            std::cout << "+" << std::flush;
-        }
+        // if (ii++ % 100 == 0) {
+        //     std::cout << "+" << std::flush;
+        // }
         std::vector<std::string> vec;
         boost::split(vec, line, boost::is_any_of(delims));
 
@@ -192,25 +281,27 @@ void run_test(const MNIST_NEURAL_NETWORK& nn) {
     std::ifstream infile("mnist_test.csv");
     std::string line;
     std::string delims = ",";
+    std::vector<std::string> vec;
+    std::vector<double> inputs(784);
     while (std::getline(infile, line)) {
-        std::vector<std::string> vec;
         boost::split(vec, line, boost::is_any_of(delims));
 
-        std::vector<double> inputs(784);
-        for (int i = 0; i < inputnodes; ++i) {
-            inputs[i] = (double(std::stoi(vec[i+1])) / 255.0 * 0.99) + 0.001;
-        }
-        int correct_label = std::stoi(vec[0]);
+        if (vec.size() == 785) {
+            for (int i = 0; i < inputnodes; ++i) {
+                inputs[i] = (double(std::stoi(vec[i+1])) / 255.0 * 0.99) + 0.001;
+            }
+            int correct_label = std::stoi(vec[0]);
 
-        const std::vector<double>& outputs = nn.query(inputs);
-        int label = std::distance(outputs.begin(), std::max_element(outputs.begin(), outputs.end()));
+            const std::vector<double>& outputs = nn.query(inputs);
+            int label = std::distance(outputs.begin(), std::max_element(outputs.begin(), outputs.end()));
 
-        if (label == correct_label) {
-            // std::cout << "found correct label: " << correct_label << std::endl;
-            scorecard.push_back(1);
-        } else {
-            // std::cout << ":-( label: " << label << " should be: " << correct_label << std::endl;
-            scorecard.push_back(0);
+            if (label == correct_label) {
+                // std::cout << "found correct label: " << correct_label << std::endl;
+                scorecard.push_back(1);
+            } else {
+                // std::cout << ":-( label: " << label << " should be: " << correct_label << std::endl;
+                scorecard.push_back(0);
+            }
         }
     }
     
@@ -220,15 +311,30 @@ void run_test(const MNIST_NEURAL_NETWORK& nn) {
 
 int main(void)
 {
+#if 1
     constexpr int epochs = 10;
 
     MNIST_NEURAL_NETWORK nn(learingrate);
 
+    auto t1 = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < epochs; ++i)
     {
         std::cout << "Train epoch " << i << std::endl;
 
         run_training(nn);
     }
+    auto t2 = std::chrono::high_resolution_clock::now();
     run_test(nn);
+    auto t3 = std::chrono::high_resolution_clock::now();
+
+    std::cout << "training took "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+              << " milliseconds" << std::endl;
+
+    std::cout << "test took "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count()
+              << " milliseconds" << std::endl;
+#else
+    test();
+#endif
 }
