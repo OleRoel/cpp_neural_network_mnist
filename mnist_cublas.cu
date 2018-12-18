@@ -100,7 +100,7 @@ class CudaVector {
             return *this;
         }
 
-        inline CudaVector& operator = (std::vector<double>& vec) {
+        inline CudaVector& operator = (const std::vector<double>& vec) {
             set(vec);
         }
 
@@ -288,8 +288,8 @@ class NeuralNetwork : CuBLASBase
     
     void train(const std::vector<double>& _inputs, const std::vector<double>& targets)
     {
-        inputs.set(_inputs);
-        output_errors.set(targets);
+        inputs = _inputs;
+        output_errors = targets;
 
         feed_forward<hiddennodes, inputnodes>(handle, wih, inputs, hidden_outputs);
         feed_forward<outputnodes, hiddennodes>(handle, who, hidden_outputs, outputs);

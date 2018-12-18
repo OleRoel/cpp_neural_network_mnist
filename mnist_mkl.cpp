@@ -69,7 +69,7 @@ class MKLVector {
             return *this;
         }
 
-        inline MKLVector& operator = (std::vector<double>& vec) {
+        inline MKLVector& operator = (const std::vector<double>& vec) {
             return set(vec);
         }
 
@@ -221,25 +221,18 @@ class NeuralNetwork {
         }
     
     void train(const std::vector<double>& _inputs, const std::vector<double>& targets) {
-        inputs.set(_inputs);
-        output_errors.set(targets);
+        inputs = _inputs;
+        output_errors = targets;
 
         feed_forward<hiddennodes, inputnodes>(wih, inputs, hidden_outputs);
         feed_forward<outputnodes, hiddennodes>(who, hidden_outputs, outputs);
 
-        output_errors.minus(outputs);
+        output_errors -= outputs;
                 
         hidden_layer_error<outputnodes, hiddennodes>(who, output_errors, hidden_errors);
 
         backpropagate<outputnodes, hiddennodes>(hidden_outputs, outputs, output_errors, learningrate, who);
         backpropagate<hiddennodes, inputnodes>(inputs, hidden_outputs, hidden_errors, learningrate, wih);
-
-#if 0
-        hidden_outputs.print("hidden_outputs");
-        outputs.print("outputs");
-        output_errors.print("output_errors");
-        hidden_errors.print("hidden_errors");
-#endif
     }
 
     const std::vector<double>& query(const std::vector<double>& _inputs, std::vector<double>& _outputs) const {
@@ -285,11 +278,11 @@ void run_test(const MNIST_NEURAL_NETWORK& nn) {
     std::ifstream infile("mnist_test.csv");
     std::string line;
     std::string delims = ",";
+    std::vector<std::string> vec;
+    std::vector<double> inputs(784);
     while (std::getline(infile, line)) {
-        std::vector<std::string> vec;
         boost::split(vec, line, boost::is_any_of(delims));
 
-        std::vector<double> inputs(784);
         for (int i = 0; i < inputnodes; ++i) {
             inputs[i] = (double(std::stoi(vec[i+1])) / 255.0 * 0.99) + 0.001;
         }
