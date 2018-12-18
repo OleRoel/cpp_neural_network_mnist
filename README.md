@@ -3,8 +3,6 @@ This is a coding experiment to compare speed of a C++ implementation for trainin
 
 The original code can be found in the "Code for the Make Your Own Neural Network book" in Tariq Rashid's repository here: https://github.com/makeyourownneuralnetwork/makeyourownneuralnetwork
 
-The matrix operations for the training are performed with help of the cblas library http://www.netlib.org/blas/
-
 The MNIST datasets for training and testing the neural network can be found here: https://pjreddie.com/projects/mnist-in-csv/
 
 The same training is performed with different flavours of the same code.
