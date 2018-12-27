@@ -15,6 +15,7 @@
 #include <random>
 #include <cmath>
 #include <vector>
+#include <list> 
 #include <algorithm>
 #include <functional>
 #include <cstddef>                                         /* size_t */
@@ -36,15 +37,48 @@ auto _sigmoid = [](auto d) { return (1.0 / (1.0 + std::exp(-d))); };
 auto _derive = [](auto a, auto b) { return a * b * (1.0 - b); };
 
 template<int N> 
+class NormalDistribution {
+    private:
+        std::random_device rd;
+        std::mt19937 gen{rd()};
+
+        double sigma;
+        std::normal_distribution<> d;
+    public:
+        NormalDistribution() :
+            rd{},
+            gen{rd()},
+            sigma{std::pow(N, -0.5)},
+            d{0.0, sigma} {
+
+            }
+        NormalDistribution(const NormalDistribution& nd) :
+            rd{},
+            gen{rd()},
+            sigma{nd.sigma},
+            d{0.0, sigma} {
+
+            }
+        ~NormalDistribution() {
+
+        }
+
+    double operator() () {
+        return d(gen);
+    }
+};
+
+template<int N> 
 class MKLVector {
     private:
         double* v;
  
     public:
-        MKLVector() {
-            v = (double *)mkl_malloc( N*sizeof(double), 64 );
+        MKLVector() : 
+            v{static_cast<double*>(mkl_malloc(N*sizeof(double), 64))} {
         }
-        MKLVector(const std::vector<double>& vec) : MKLVector() {
+        MKLVector(const std::vector<double>& vec) :
+            MKLVector() {
             set(vec);
         }
         ~MKLVector() {
@@ -83,42 +117,47 @@ class MKLVector {
 
         inline void get(std::vector<double>& vec) const {
             std::memcpy(&vec[0], v, N*sizeof(double));
+            // cblas_dcopy(N, v, 0, &vec[0], 0);
         }
 
         inline MKLVector& set(const std::vector<double>& vec) {
             std::memcpy(v, &vec[0], N*sizeof(double));
+            // cblas_dcopy(N, &vec[0], 0, v, 0);
+
             return *this;
         }
 
         inline void sigmoid() {
-            std::transform(v, &v[N], v, _sigmoid);
+            std::transform(begin(), end(), begin(), _sigmoid);
         }
 
         inline void derive(const MKLVector<N>& v1, const MKLVector<N>& v2) {
             std::transform(v1.begin(), v1.end(), v2.begin(), v, _derive);
         }
 
-        void random() {
-            std::random_device rd{};
-            std::mt19937 gen{rd()};
-
-            double sigma {std::pow(N, -0.5)};
-            std::normal_distribution<> d{0.0, sigma};
-            std::generate(v, &v[N], [&gen, &d]() mutable { return d(gen); });
+        inline void derive(const MKLVector<N>& vec) {
+            std::transform(begin(), end(), vec.begin(), begin(), _derive);
         }
 
-        void print(const std::string& name) {
+        void random() {
+            NormalDistribution<N> nd;
+
+            std::generate(begin(), end(), nd);
+        }
+
+        void print(const std::string& name) const {
             std::cout << name << ":\n" << *this << std::endl;
         }
 
-        void print(const std::string& name, int row, int column) {
+        void print(const std::string& name, int row, int column) const {
             std::vector<double> matrix(N);
             get(matrix);
 
             std::cout << "Matrix " << name << " has " << row << " rows and " << column << " columns:\n";
             for (int i = 0; i < row; i++){
                 for (int j = 0; j < column; j++) {
-                    std::cout << '[' << i << ',' << j << ']'<< std::setw(6) << matrix[i*column + j] << " ";
+                    // std::cout << '[' << i << ',' << j << ']'<< std::setw(6) << matrix[i*column + j] << " ";
+                    std::cout << std::setw(6) << matrix[i*column + j] << " ";
                 }
                 std::cout << '\n';
             }
@@ -138,11 +177,8 @@ class MKLVector {
 template<int N> 
 std::ostream& operator << (std::ostream& os, const MKLVector<N>& obj)
 {
-    std::vector<double> vec(obj.size());
-    obj.get(vec);
-
-    for (const double& i : vec) {
-        os << i <<  ", ";
+    for (std::size_t i = 0; i < N; i++) {
+        os << obj[i] <<  ", ";
     }
 
     return os;
@@ -151,148 +187,184 @@ std::ostream& operator << (std::ostream& os, const MKLVector<N>& obj)
 template<int N> 
 std::istream& operator >> (std::istream& is, MKLVector<N>& obj)
 {
-    std::vector<double> vec(obj.size());
     std::string line;
     std::string delims = ",";
-    std::vector<double>::iterator it = vec.begin();
+    double* it = obj.begin();
+    std::vector<std::string> vec(N);
 
     while (std::getline(is, line)) {
-        std::vector<std::string> vec;
         boost::split(vec, line, boost::is_any_of(delims));
-
         it = std::transform(vec.begin(), vec.end(), it, [](const std::string& p) -> double { return std::stod(p); });
     }
-
-    obj.set(vec);
 
     return is;
 }
 
-template<int M, int N> void feed_forward(const MKLVector<M*N>& A,
-                                            const MKLVector<N>& x,
-                                            MKLVector<M>& y) {
-    cblas_dgemv(CblasColMajor, CblasNoTrans, M, N, 1.0, A, M, x, 1, 0.0, y, 1);
-    y.sigmoid();
-} 
+template<int M, int N>
+class Layer {
+    private:
+        MKLVector<M*N> weights;
+        MKLVector<M> neurons;
 
-template<int M, int N> void hidden_layer_error(const double* A, const double* x, double* y) {
-    cblas_dgemv(CblasColMajor, CblasTrans, M, N, 1.0, A, M, x, 1, 0.0, y, 1);
-}
+        MKLVector<M> errors;
 
-template<int M, int N> void backpropagate(const MKLVector<N>& vec_in,
-                                            const MKLVector<M>& vec_out,
-                                            const MKLVector<M>& vec_err,
-                                            double learningrate,
-                                            MKLVector<M*N>& result) {
-    MKLVector<M> vec;
-    vec.derive(vec_err, vec_out);
-    cblas_dger(CblasColMajor, M, N, learningrate, vec, 1, vec_in, 1, result, M);
-}
+        double learningrate;
+        
+    public:
+        Layer(double learningrate) : learningrate{learningrate} {
+            weights.random();
+        }
+        Layer(const std::string& filename, double learningrate) : learningrate{learningrate} {
+            weights.read(filename);
+        }
+
+        void feed_forward(const MKLVector<N>& inputs) {
+            cblas_dgemv(CblasColMajor, CblasNoTrans, M, N, 1.0, weights, M, inputs, 1, 0.0, neurons, 1);
+            neurons.sigmoid();
+        }
+
+        void backpropagate_errors(MKLVector<N>& out_errors) {
+            cblas_dgemv(CblasColMajor, CblasTrans, M, N, 1.0, weights, M, errors, 1, 0.0, out_errors, 1);
+        }
+
+        void backpropagate(const MKLVector<N>& inputs) {
+            errors.derive(neurons);
+            cblas_dger(CblasColMajor, M, N, learningrate, errors, 1, inputs, 1, weights, M);
+        }
+
+        inline const  MKLVector<M*N>& get_weights() const {
+            return weights;
+        }
+
+        inline const MKLVector<M>& get_neurons() const {
+            return neurons;
+        }
+
+        inline const MKLVector<M>& get_errors() const {
+            return errors;
+        }
+
+        inline MKLVector<M>& get_errors() {
+            return errors;
+        }
+
+        inline void calc_errors(const std::vector<double>& vec) {
+            errors = vec;
+            errors -= neurons;
+        }
+};
 
 template<int inputnodes, int hiddennodes, int outputnodes>
 class NeuralNetwork {
     private:
-        double learningrate;
-
-        MKLVector<inputnodes*hiddennodes> wih;
-        MKLVector<outputnodes*hiddennodes> who;
-
-        mutable MKLVector<hiddennodes> hidden_outputs;
-        mutable MKLVector<outputnodes> outputs;
-
-        mutable MKLVector<hiddennodes> hidden_errors;
-        mutable MKLVector<outputnodes> output_errors;
+        mutable Layer<hiddennodes, inputnodes> hidden_layer;
+        mutable Layer<outputnodes, hiddennodes> output_layer;
 
         mutable MKLVector<inputnodes> inputs;
 
+        void feed_forward() const {
+            hidden_layer.feed_forward(inputs);
+            output_layer.feed_forward(hidden_layer.get_neurons());
+        }
+
+        void updated_errors(const std::vector<double>& expected_vals) {
+            output_layer.calc_errors(expected_vals);
+            output_layer.backpropagate_errors(hidden_layer.get_errors());
+        }
+
+        void backpropagate() {
+            output_layer.backpropagate(hidden_layer.get_neurons());
+            hidden_layer.backpropagate(inputs);
+        }
+
     public:
         NeuralNetwork(double learningrate) :
-            learningrate{learningrate} {
-#if 0
-            wih.read("wih_col_major.csv");
-            wih.read("who_col_major.csv");
-#else
-            wih.random();
-            who.random();
-#endif
-
-            }
+            hidden_layer(learningrate),
+            output_layer(learningrate) {
+        }
         ~NeuralNetwork() {
         }
     
     void train(const std::vector<double>& _inputs, const std::vector<double>& targets) {
         inputs = _inputs;
-        output_errors = targets;
-
-        feed_forward<hiddennodes, inputnodes>(wih, inputs, hidden_outputs);
-        feed_forward<outputnodes, hiddennodes>(who, hidden_outputs, outputs);
-
-        output_errors -= outputs;
-                
-        hidden_layer_error<outputnodes, hiddennodes>(who, output_errors, hidden_errors);
-
-        backpropagate<outputnodes, hiddennodes>(hidden_outputs, outputs, output_errors, learningrate, who);
-        backpropagate<hiddennodes, inputnodes>(inputs, hidden_outputs, hidden_errors, learningrate, wih);
+    
+        feed_forward();
+        updated_errors(targets);
+        backpropagate();
     }
 
     const std::vector<double>& query(const std::vector<double>& _inputs, std::vector<double>& _outputs) const {
-        inputs.set(_inputs);
+        inputs = _inputs;
 
-        feed_forward<hiddennodes, inputnodes>(wih, inputs, hidden_outputs);
-        feed_forward<outputnodes, hiddennodes>(who, hidden_outputs, outputs);
+        feed_forward();
 
-        outputs.get(_outputs);
+        output_layer.get_neurons().get(_outputs);
 
         return _outputs;
     }
 };
 
-void run_training(MNIST_NEURAL_NETWORK& nn) {
-    std::ifstream infile("mnist_train.csv");
-    std::string line;
-    std::string delims = ",";
-    // std::size_t ii {0};
-    std::vector<std::string> vec;
-    std::vector<double> input(784);
+class ImagesBuffer {
+    private:
+        typedef std::vector<double> image_array;
+        std::vector<image_array> buffers;
+        std::vector<int> numbers;
 
-    while (std::getline(infile, line)) {
-        // if (ii++ % 100 == 0) {
-        //     std::cout << "+" << std::flush;
-        // }
-        boost::split(vec, line, boost::is_any_of(delims));
+        void read(const std::string& filename) {
+            std::ifstream infile(filename);
+            std::string line;
+            std::string delims = ",";
+            std::vector<std::string> vec;
+            image_array inputs(inputnodes);
+            while (std::getline(infile, line)) {
+                boost::split(vec, line, boost::is_any_of(delims));
 
-        for (std::size_t i = 0; i < inputnodes; ++i) {
-            input[i] = (double(std::stoi(vec[i+1])) / 255.0 * 0.99) + 0.01;
+                std::transform(vec.begin()+1, vec.end(), inputs.begin(), [](const std::string& p) -> double { return (double(std::stoi(p)) / 255.0 * 0.99) + 0.001; });
+
+                int correct_label = std::stoi(vec[0]);
+
+                buffers.push_back(inputs);
+                numbers.push_back(correct_label);
+            }
         }
-        std::vector<double> targets(outputnodes, 0.01);
-        targets[std::stoi(vec[0])] = 0.99;
 
-        nn.train(input, targets);
+    public:
+        ImagesBuffer(const std::string& filename) {
+            read(filename);
+        }
+
+        const std::vector<double>& get_image_array_at(std::size_t idx) const {
+            return buffers[idx];
+        }
+        const int get_number_at(std::size_t idx) const {
+            return numbers[idx];
+        }
+
+        std::size_t size() const {
+            return numbers.size();
+        }
+};
+
+void run_training(MNIST_NEURAL_NETWORK& nn, const ImagesBuffer& buff) {
+    for (size_t i = 0; i < buff.size(); i++) {
+        std::vector<double> targets(outputnodes, 0.01);
+        targets[buff.get_number_at(i)] = 0.99;
+
+        nn.train(buff.get_image_array_at(i), targets);
     }
-    std::cout << std::endl;
 }
 
-void run_test(const MNIST_NEURAL_NETWORK& nn) {
+void run_test(const MNIST_NEURAL_NETWORK& nn, const ImagesBuffer& buff) {
     std::vector<int> scorecard;
 
-    std::ifstream infile("mnist_test.csv");
-    std::string line;
-    std::string delims = ",";
-    std::vector<std::string> vec;
-    std::vector<double> inputs(784);
-    while (std::getline(infile, line)) {
-        boost::split(vec, line, boost::is_any_of(delims));
+    std::vector<double> outputs(outputnodes);
 
-        for (int i = 0; i < inputnodes; ++i) {
-            inputs[i] = (double(std::stoi(vec[i+1])) / 255.0 * 0.99) + 0.001;
-        }
-        int correct_label = std::stoi(vec[0]);
+    for (size_t i = 0; i < buff.size(); i++) {
+        nn.query(buff.get_image_array_at(i), outputs);
 
-        std::vector<double> outputs(outputnodes);
-        nn.query(inputs, outputs);
         int label = std::distance(outputs.begin(), std::max_element(outputs.begin(), outputs.end()));
 
-        if (label == correct_label) {
+        if (label == buff.get_number_at(i)) {
             // std::cout << "found correct label: " << correct_label << std::endl;
             scorecard.push_back(1);
         } else {
@@ -300,7 +372,7 @@ void run_test(const MNIST_NEURAL_NETWORK& nn) {
             scorecard.push_back(0);
         }
     }
-    
+
     int sum = std::accumulate(scorecard.begin(), scorecard.end(), 0);
     std::cout << "performance = " << std::setw(6) << double(sum)/double(scorecard.size()) << std::endl;
 }
@@ -308,25 +380,36 @@ void run_test(const MNIST_NEURAL_NETWORK& nn) {
 int main(void)
 {
     constexpr int epochs = 10;
+    auto start_time = std::chrono::high_resolution_clock::now();
 
     MNIST_NEURAL_NETWORK nn(learingrate);
-
-    auto t1 = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < epochs; ++i)
     {
-        std::cout << "Train epoch " << i << std::endl;
+        ImagesBuffer train_buff("mnist_train.csv");
+        auto t1 = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < epochs; ++i) {
+            std::cout << "Train epoch " << i << std::endl; 
 
-        run_training(nn);
+            run_training(nn, train_buff);
+        }
+        auto t2 = std::chrono::high_resolution_clock::now();
+        std::cout << "training took "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+                << " milliseconds" << std::endl;
     }
-    auto t2 = std::chrono::high_resolution_clock::now();
-    run_test(nn);
-    auto t3 = std::chrono::high_resolution_clock::now();
 
-    std::cout << "training took "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
-              << " milliseconds" << std::endl;
+    {
+        ImagesBuffer test_buff("mnist_train.csv");
+        auto t1 = std::chrono::high_resolution_clock::now();
+        run_test(nn, test_buff);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        std::cout << "test took "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count()
+                << " milliseconds" << std::endl;
+    }
 
-    std::cout << "test took "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count()
-              << " milliseconds" << std::endl;
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    std::cout << "total run-time "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(end_time-start_time).count()
+            << " milliseconds" << std::endl;
 }
