@@ -42,7 +42,7 @@ nvcc mnist_cublas.cu -lcublas -O3 -Xptxas -O3,-v
 ## Performance
 | Flavour    | Performance | Train Time [s] | Test Time [s] |
 | ---------- |------------:| ---------------:|-------------:|
-| **cblas**  |      0.9673 |          80.258 |        0.791 |
+| **cblas**  |      0.9675 |          45.055 |        0.311 |
 | **MKL**    |      0.9664 |          29.150 |        0.197 |
 | **cuBLAS** |      0.9624 |          66.196 |        0.735 |
 | **Python** |      0.9668 |         260.706 |        1.362 |
