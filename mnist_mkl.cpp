@@ -398,7 +398,7 @@ int main(void)
     }
 
     {
-        ImagesBuffer test_buff("mnist_train.csv");
+        ImagesBuffer test_buff("mnist_test.csv");
         auto t1 = std::chrono::high_resolution_clock::now();
         run_test(nn, test_buff);
         auto t2 = std::chrono::high_resolution_clock::now();
