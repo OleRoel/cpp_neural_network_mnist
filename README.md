@@ -25,7 +25,7 @@ g++ mnist_cblas.cpp -I /usr/local/opt/openblas/include -lcblas -std=c++17 -msse4
 
 **MKL:**
 ```sh
-g++ mnist_mkl.cpp ${MKLROOT}/lib/libmkl_intel_ilp64.a ${MKLROOT}/lib/libmkl_sequential.a ${MKLROOT}/lib/libmkl_core.a -lpthread -lm -ldl -std=c++17 -msse4.2 -mfpmath=sse -pthread -O3  -DMKL_ILP64 -m64 -I${MKLROOT}/include 
+clang++ mnist_mkl.cpp ${MKLROOT}/lib/libmkl_intel_ilp64.a ${MKLROOT}/lib/libmkl_sequential.a ${MKLROOT}/lib/libmkl_core.a -lpthread -lm -ldl -std=c++17 -msse4.2 -mfpmath=sse -pthread  -DMKL_ILP64 -m64 -I${MKLROOT}/include -O3 
 ```
 
 **CUDA:**
@@ -43,11 +43,11 @@ nvcc mnist_cublas.cu -lcublas -O3 -Xptxas -O3,-v
 | Flavour    | Performance | Train Time [s] | Test Time [s] |
 | ---------- |------------:| ---------------:|-------------:|
 | **cblas**  |      0.9673 |          80.258 |        0.791 |
-| **MKL**    |      0.9671 |          53.739 |        0.600 |
+| **MKL**    |      0.9664 |          29.150 |        0.197 |
 | **cuBLAS** |      0.9624 |          66.196 |        0.735 |
 | **Python** |      0.9668 |         260.706 |        1.362 |
 
-MKL needs 18% less time for the training than cuBLAS do – I guess there is room for improvement for my CUDA implementation.
+MKL is factor 2.2 faster than cuBLAS – I guess there is room for improvement for my CUDA implementation.
 
 Hardware used:<br>
 MacBook Pro (15-inch, 2018), 2,9 GHz Intel Core i9<br>
