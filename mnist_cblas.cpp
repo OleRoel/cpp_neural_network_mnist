@@ -19,12 +19,10 @@ constexpr std::size_t hiddennodes = 200;
 constexpr int outputnodes = 10;
 constexpr double learingrate = 0.01;
 
-template<int inputnodes, int hiddennodes, int outputnodes> class NeuralNetwork;
-
 typedef NeuralNetwork<inputnodes, hiddennodes, outputnodes> MNIST_NEURAL_NETWORK;
 typedef ImagesBuffer<inputnodes> IMAGES_BUFFER;
 
-void run_training(MNIST_NEURAL_NETWORK& nn, const ImagesBuffer<inputnodes>& buff) {
+void run_training(MNIST_NEURAL_NETWORK& nn, const IMAGES_BUFFER& buff) {
     for (size_t i = 0; i < buff.size(); i++) {
         std::vector<double> targets(outputnodes, 0.01);
         targets[buff.get_number_at(i)] = 0.99;
@@ -33,7 +31,7 @@ void run_training(MNIST_NEURAL_NETWORK& nn, const ImagesBuffer<inputnodes>& buff
     }
 }
 
-void run_test(const MNIST_NEURAL_NETWORK& nn, const ImagesBuffer<inputnodes>& buff) {
+void run_test(const MNIST_NEURAL_NETWORK& nn, const IMAGES_BUFFER& buff) {
     std::vector<int> scorecard;
 
     std::vector<double> outputs(outputnodes);

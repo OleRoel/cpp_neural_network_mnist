@@ -1,14 +1,15 @@
 #ifndef _MKL_LAYER
 #define _MKL_LAYER
 
-// #include "mkl.h"
+#include <boost/preprocessor/stringize.hpp>
 
-// #include "mkl_vector.hpp"
+template<int M> class Vector;
+template<int M, int N> class Matrix;
 
 template<int M, int N>
 class Layer {
     private:
-        Vector<M*N> weights;
+        Matrix<M, N> weights;
         Vector<M> neurons;
 
         Vector<M> errors;
@@ -24,17 +25,16 @@ class Layer {
         }
 
         void feed_forward(const Vector<N>& inputs) {
-            cblas_dgemv(CblasColMajor, CblasNoTrans, M, N, 1.0, weights, M, inputs, 1, 0.0, neurons, 1);
-            neurons.sigmoid();
+            weights.multiply(inputs, neurons).sigmoid();
         }
 
         void backpropagate_errors(Vector<N>& out_errors) {
-            cblas_dgemv(CblasColMajor, CblasTrans, M, N, 1.0, weights, M, errors, 1, 0.0, out_errors, 1);
+            weights.multiply_transposed(errors, out_errors);
         }
 
         void backpropagate(const Vector<N>& inputs) {
             errors.derive(neurons);
-            cblas_dger(CblasColMajor, M, N, learningrate, errors, 1, inputs, 1, weights, M);
+            weights.multiply(errors, inputs, learningrate);
         }
 
         inline const  Vector<M*N>& get_weights() const {
@@ -53,7 +53,7 @@ class Layer {
             return errors;
         }
 
-        inline void calc_errors(const std::vector<double>& vec) {
+        inline void calc_errors(const Vector<M>& vec) {
             errors = vec;
             errors -= neurons;
         }

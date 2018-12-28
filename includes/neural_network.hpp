@@ -13,19 +13,17 @@ class NeuralNetwork {
         mutable Layer<hiddennodes, inputnodes> hidden_layer;
         mutable Layer<outputnodes, hiddennodes> output_layer;
 
-        mutable Vector<inputnodes> inputs;
-
-        void feed_forward() const {
+        void feed_forward(const Vector<inputnodes>& inputs) const {
             hidden_layer.feed_forward(inputs);
             output_layer.feed_forward(hidden_layer.get_neurons());
         }
 
-        void updated_errors(const std::vector<double>& expected_vals) {
-            output_layer.calc_errors(expected_vals);
+        void updated_errors(const Vector<outputnodes>& targets) {
+            output_layer.calc_errors(targets);
             output_layer.backpropagate_errors(hidden_layer.get_errors());
         }
 
-        void backpropagate() {
+        void backpropagate(const Vector<inputnodes>& inputs) {
             output_layer.backpropagate(hidden_layer.get_neurons());
             hidden_layer.backpropagate(inputs);
         }
@@ -38,18 +36,14 @@ class NeuralNetwork {
         ~NeuralNetwork() {
         }
     
-    void train(const std::vector<double>& _inputs, const std::vector<double>& targets) {
-        inputs = _inputs;
-    
-        feed_forward();
+    void train(const Vector<inputnodes>& inputs, const Vector<outputnodes>& targets) {
+        feed_forward(inputs);
         updated_errors(targets);
-        backpropagate();
+        backpropagate(inputs);
     }
 
-    const std::vector<double>& query(const std::vector<double>& _inputs, std::vector<double>& _outputs) const {
-        inputs = _inputs;
-
-        feed_forward();
+    const std::vector<double>& query(const Vector<inputnodes>& inputs, std::vector<double>& _outputs) const {
+        feed_forward(inputs);
 
         output_layer.get_neurons().get(_outputs);
 

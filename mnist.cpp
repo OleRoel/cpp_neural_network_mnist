@@ -9,7 +9,12 @@
 #include <numeric>
 #include <chrono>
 
-#include "includes/mkl/vector.hpp"
+#if defined(TARGET_CBLAS) || defined(TARGET_MKL)
+#include "includes/cblas/vector.hpp"
+#elif defined(TARGET_CUBLAS)
+#include "includes/cublas/vector.hpp"
+#endif
+
 #include "includes/layer.hpp"
 #include "includes/images_buffer.hpp"
 #include "includes/neural_network.hpp"
@@ -23,9 +28,12 @@ typedef NeuralNetwork<inputnodes, hiddennodes, outputnodes> MNIST_NEURAL_NETWORK
 typedef ImagesBuffer<inputnodes> IMAGES_BUFFER;
 
 void run_training(MNIST_NEURAL_NETWORK& nn, const IMAGES_BUFFER& buff) {
+    Vector<10> targets;
     for (size_t i = 0; i < buff.size(); i++) {
-        std::vector<double> targets(outputnodes, 0.01);
-        targets[buff.get_number_at(i)] = 0.99;
+        double t[10] = {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01};
+        // std::vector<double> targets(outputnodes, 0.01);
+        t[buff.get_number_at(i)] = 0.99;
+        targets.set(t);
 
         nn.train(buff.get_image_array_at(i), targets);
     }
@@ -61,7 +69,7 @@ int main(void)
 
     MNIST_NEURAL_NETWORK nn(learingrate);
     {
-        IMAGES_BUFFER train_buff("mnist_train.csv");
+        IMAGES_BUFFER train_buff("mnist_train.csv", 60000UL-1UL);
         auto t1 = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < epochs; ++i) {
             std::cout << "Train epoch " << i << std::endl; 
@@ -75,7 +83,7 @@ int main(void)
     }
 
     {
-        IMAGES_BUFFER test_buff("mnist_test.csv");
+        IMAGES_BUFFER test_buff("mnist_test.csv", 10000UL-1UL);
         auto t1 = std::chrono::high_resolution_clock::now();
         run_test(nn, test_buff);
         auto t2 = std::chrono::high_resolution_clock::now();
@@ -89,4 +97,7 @@ int main(void)
     std::cout << "total run-time "
             << std::chrono::duration_cast<std::chrono::milliseconds>(end_time-start_time).count()
             << " milliseconds" << std::endl;
+    
+    std::cout << "sizeof(double)" << sizeof(double) << std::endl;
+    std::cout << "sizeof(float)" << sizeof(float) << std::endl;
 }
