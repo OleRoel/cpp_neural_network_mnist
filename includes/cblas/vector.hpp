@@ -43,7 +43,7 @@ auto _derive = [](auto a, auto b) { return a * b * (1.0 - b); };
 
 template<std::size_t M> float* allocate_buffer() {
 #if defined(TARGET_MKL)
-    return static_cast<float*>(mkl_malloc(M*sizeof(float), 64));
+    return (float*)(mkl_malloc(M*sizeof(float), 64));
 #else
     return new float[M];
 #endif
@@ -69,6 +69,14 @@ class Vector {
             Vector() {
             set(vec);
         }
+        Vector(const float vec[10]) :
+            Vector() {
+            set(vec);
+        }
+        Vector(const Vector& vec) :
+            Vector() {
+            set(vec.v);
+        }
         ~Vector() {
             free_buffer(v);
         }
@@ -93,6 +101,10 @@ class Vector {
 
         inline Vector& operator = (const std::vector<float>& vec) {
             return set(vec);
+        }
+
+        inline Vector& operator = (const Vector& vec) {
+            return set(vec.v);
         }
 
         inline Vector& operator -= (const Vector& vec) {
@@ -125,9 +137,14 @@ class Vector {
             return *this;
         }
 
-        inline Vector& set(const float* vec) {
+        inline Vector& set(const float vec[10]) {
             std::memcpy(v, vec, M*sizeof(float));
 
+            return *this;
+        }
+
+        inline Vector& set_at(std::size_t idx, float val) {
+            v[idx] = val;
             return *this;
         }
 

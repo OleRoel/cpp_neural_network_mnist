@@ -10,6 +10,7 @@ template<int M, int N>
 class Layer {
     private:
         Matrix<M, N> weights;
+        int trenner[10];
         Vector<M> neurons;
 
         Vector<M> errors;

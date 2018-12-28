@@ -27,15 +27,14 @@ constexpr float learingrate = 0.01;
 typedef NeuralNetwork<inputnodes, hiddennodes, outputnodes> MNIST_NEURAL_NETWORK;
 typedef ImagesBuffer<inputnodes> IMAGES_BUFFER;
 
-void run_training(MNIST_NEURAL_NETWORK& nn, const IMAGES_BUFFER& buff) {
-    Vector<10> targets;
-    for (size_t i = 0; i < buff.size(); i++) {
-        float t[10] = {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01};
-        // std::vector<float> targets(outputnodes, 0.01);
-        t[buff.get_number_at(i)] = 0.99;
-        targets.set(t);
+float t[10] = {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01};
+Vector<10> targets(t);
 
+void run_training(MNIST_NEURAL_NETWORK& nn, const IMAGES_BUFFER& buff) {
+    for (size_t i = 0; i < buff.size(); i++) {
+        targets.set_at(buff.get_number_at(i), 0.99);
         nn.train(buff.get_image_array_at(i), targets);
+        targets.set_at(buff.get_number_at(i), 0.01);
     }
 }
 
@@ -69,7 +68,7 @@ int main(void)
 
     MNIST_NEURAL_NETWORK nn(learingrate);
     {
-        IMAGES_BUFFER train_buff("mnist_train.csv", 60000UL-1UL);
+        IMAGES_BUFFER train_buff("mnist_train.csv", 60e3);
         auto t1 = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < epochs; ++i) {
             std::cout << "Train epoch " << i << std::endl; 
@@ -83,7 +82,7 @@ int main(void)
     }
 
     {
-        IMAGES_BUFFER test_buff("mnist_test.csv", 10000UL-1UL);
+        IMAGES_BUFFER test_buff("mnist_test.csv", 10e3);
         auto t1 = std::chrono::high_resolution_clock::now();
         run_test(nn, test_buff);
         auto t2 = std::chrono::high_resolution_clock::now();
@@ -97,7 +96,4 @@ int main(void)
     std::cout << "total run-time "
             << std::chrono::duration_cast<std::chrono::milliseconds>(end_time-start_time).count()
             << " milliseconds" << std::endl;
-    
-    std::cout << "sizeof(float)" << sizeof(float) << std::endl;
-    std::cout << "sizeof(float)" << sizeof(float) << std::endl;
 }

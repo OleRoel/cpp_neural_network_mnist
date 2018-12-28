@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <iostream>
-#include <boost/algorithm/string.hpp>                      /* split */
+#include <boost/algorithm/string.hpp>  /* split */
 #include <fstream>
 
 template<int M> class Vector;
