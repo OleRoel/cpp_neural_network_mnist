@@ -22,7 +22,7 @@
 constexpr std::size_t inputnodes = 784;
 constexpr std::size_t hiddennodes = 200;
 constexpr int outputnodes = 10;
-constexpr double learingrate = 0.01;
+constexpr float learingrate = 0.01;
 
 typedef NeuralNetwork<inputnodes, hiddennodes, outputnodes> MNIST_NEURAL_NETWORK;
 typedef ImagesBuffer<inputnodes> IMAGES_BUFFER;
@@ -30,8 +30,8 @@ typedef ImagesBuffer<inputnodes> IMAGES_BUFFER;
 void run_training(MNIST_NEURAL_NETWORK& nn, const IMAGES_BUFFER& buff) {
     Vector<10> targets;
     for (size_t i = 0; i < buff.size(); i++) {
-        double t[10] = {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01};
-        // std::vector<double> targets(outputnodes, 0.01);
+        float t[10] = {0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01};
+        // std::vector<float> targets(outputnodes, 0.01);
         t[buff.get_number_at(i)] = 0.99;
         targets.set(t);
 
@@ -42,7 +42,7 @@ void run_training(MNIST_NEURAL_NETWORK& nn, const IMAGES_BUFFER& buff) {
 void run_test(const MNIST_NEURAL_NETWORK& nn, const IMAGES_BUFFER& buff) {
     std::vector<int> scorecard;
 
-    std::vector<double> outputs(outputnodes);
+    std::vector<float> outputs(outputnodes);
 
     for (size_t i = 0; i < buff.size(); i++) {
         nn.query(buff.get_image_array_at(i), outputs);
@@ -59,7 +59,7 @@ void run_test(const MNIST_NEURAL_NETWORK& nn, const IMAGES_BUFFER& buff) {
     }
 
     int sum = std::accumulate(scorecard.begin(), scorecard.end(), 0);
-    std::cout << "performance = " << std::setw(6) << double(sum)/double(scorecard.size()) << std::endl;
+    std::cout << "performance = " << std::setw(6) << float(sum)/float(scorecard.size()) << std::endl;
 }
 
 int main(void)
@@ -98,6 +98,6 @@ int main(void)
             << std::chrono::duration_cast<std::chrono::milliseconds>(end_time-start_time).count()
             << " milliseconds" << std::endl;
     
-    std::cout << "sizeof(double)" << sizeof(double) << std::endl;
+    std::cout << "sizeof(float)" << sizeof(float) << std::endl;
     std::cout << "sizeof(float)" << sizeof(float) << std::endl;
 }

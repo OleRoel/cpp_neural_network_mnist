@@ -29,7 +29,7 @@ class NeuralNetwork {
         }
 
     public:
-        NeuralNetwork(double learningrate) :
+        NeuralNetwork(float learningrate) :
             hidden_layer(learningrate),
             output_layer(learningrate) {
         }
@@ -42,7 +42,7 @@ class NeuralNetwork {
         backpropagate(inputs);
     }
 
-    const std::vector<double>& query(const Vector<inputnodes>& inputs, std::vector<double>& _outputs) const {
+    const std::vector<float>& query(const Vector<inputnodes>& inputs, std::vector<float>& _outputs) const {
         feed_forward(inputs);
 
         output_layer.get_neurons().get(_outputs);

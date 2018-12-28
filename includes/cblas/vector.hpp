@@ -23,17 +23,17 @@ class Matrix : public Vector<M*N> {
     public:
 
         inline Vector<M>& multiply(const Vector<N>& vec, Vector<M>& result) const {
-            cblas_dgemv(CblasColMajor, CblasNoTrans, M, N, 1.0, *this, M, vec, 1, 0.0, result, 1);
+            cblas_sgemv(CblasColMajor, CblasNoTrans, M, N, 1.0, *this, M, vec, 1, 0.0, result, 1);
             return result;
         }
 
         inline Vector<N>& multiply_transposed(const Vector<M>& vec, Vector<N>& result) const {
-            cblas_dgemv(CblasColMajor, CblasTrans, M, N, 1.0, *this, M, vec, 1, 0.0, result, 1);
+            cblas_sgemv(CblasColMajor, CblasTrans, M, N, 1.0, *this, M, vec, 1, 0.0, result, 1);
             return result;
         }
 
-        inline Matrix& multiply(const Vector<M>& vec1, const Vector<N>& vec2, double factor) {
-            cblas_dger(CblasColMajor, M, N, factor, vec1, 1, vec2, 1, *this, M);
+        inline Matrix& multiply(const Vector<M>& vec1, const Vector<N>& vec2, float factor) {
+            cblas_sger(CblasColMajor, M, N, factor, vec1, 1, vec2, 1, *this, M);
             return *this;
         }
 };
@@ -41,14 +41,14 @@ class Matrix : public Vector<M*N> {
 auto _sigmoid = [](auto d) { return (1.0 / (1.0 + std::exp(-d))); };
 auto _derive = [](auto a, auto b) { return a * b * (1.0 - b); };
 
-template<std::size_t M> double* allocate_buffer() {
+template<std::size_t M> float* allocate_buffer() {
 #if defined(TARGET_MKL)
-    return static_cast<double*>(mkl_malloc(M*sizeof(double), 64));
+    return static_cast<float*>(mkl_malloc(M*sizeof(float), 64));
 #else
-    return new double[M];
+    return new float[M];
 #endif
 }
-void free_buffer(double* buff) {
+void free_buffer(float* buff) {
 #if defined(TARGET_MKL)
     mkl_free(buff);
 #else
@@ -59,13 +59,13 @@ void free_buffer(double* buff) {
 template<int M> 
 class Vector {
     private:
-        double* v;
+        float* v;
  
     public:
         Vector() : 
             v{allocate_buffer<M>()} {
         }
-        Vector(const std::vector<double>& vec) :
+        Vector(const std::vector<float>& vec) :
             Vector() {
             set(vec);
         }
@@ -73,25 +73,25 @@ class Vector {
             free_buffer(v);
         }
 
-        operator const double* () const { return v; }
-        operator double* () { return v; }
+        operator const float* () const { return v; }
+        operator float* () { return v; }
 
-        const double* begin() const { return v; }
-        double* begin()  { return v; }
-        const double* end() const { return &v[M]; }
-        double* end()  { return &v[M]; }
+        const float* begin() const { return v; }
+        float* begin()  { return v; }
+        const float* end() const { return &v[M]; }
+        float* end()  { return &v[M]; }
 
         Vector& minus(const Vector& vec) {
-            cblas_daxpy(M, -1.0, vec, 1, v, 1);
+            cblas_saxpy(M, -1.0, vec, 1, v, 1);
             return *this;
         }
 
         Vector& plus(const Vector& vec) {
-            cblas_daxpy(M, 1.0, vec, 1, v, 1);        
+            cblas_saxpy(M, 1.0, vec, 1, v, 1);        
             return *this;
         }
 
-        inline Vector& operator = (const std::vector<double>& vec) {
+        inline Vector& operator = (const std::vector<float>& vec) {
             return set(vec);
         }
 
@@ -113,20 +113,20 @@ class Vector {
             return matrix.multiply_transposed(vec, *this);
         }
 
-        inline void get(std::vector<double>& vec) const {
-            std::memcpy(&vec[0], v, M*sizeof(double));
-            // cblas_dcopy(N, v, 0, &vec[0], 0);
+        inline void get(std::vector<float>& vec) const {
+            std::memcpy(&vec[0], v, M*sizeof(float));
+            // cblas_scopy(N, v, 0, &vec[0], 0);
         }
 
-        inline Vector& set(const std::vector<double>& vec) {
-            std::memcpy(v, &vec[0], M*sizeof(double));
-            // cblas_dcopy(N, &vec[0], 0, v, 0);
+        inline Vector& set(const std::vector<float>& vec) {
+            std::memcpy(v, &vec[0], M*sizeof(float));
+            // cblas_scopy(N, &vec[0], 0, v, 0);
 
             return *this;
         }
 
-        inline Vector& set(const double* vec) {
-            std::memcpy(v, vec, M*sizeof(double));
+        inline Vector& set(const float* vec) {
+            std::memcpy(v, vec, M*sizeof(float));
 
             return *this;
         }
@@ -154,7 +154,7 @@ class Vector {
         }
 
         void print(const std::string& name, int row, int column) const {
-            std::vector<double> matrix(M);
+            std::vector<float> matrix(M);
             get(matrix);
 
             std::cout << "Matrix " << name << " has " << row << " rows and " << column << " columns:\n";
@@ -193,12 +193,12 @@ std::istream& operator >> (std::istream& is, Vector<N>& obj)
 {
     std::string line;
     std::string delims = ",";
-    double* it = obj.begin();
+    float* it = obj.begin();
     std::vector<std::string> vec(N);
 
     while (std::getline(is, line)) {
         boost::split(vec, line, boost::is_any_of(delims));
-        it = std::transform(vec.begin(), vec.end(), it, [](const std::string& p) -> double { return std::stod(p); });
+        it = std::transform(vec.begin(), vec.end(), it, [](const std::string& p) -> float { return std::stod(p); });
     }
 
     return is;

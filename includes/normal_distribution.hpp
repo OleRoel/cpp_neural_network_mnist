@@ -9,13 +9,13 @@ class NormalDistribution {
         std::random_device rd;
         std::mt19937 gen{rd()};
 
-        double sigma;
+        float sigma;
         std::normal_distribution<> d;
     public:
         NormalDistribution() :
             rd{},
             gen{rd()},
-            sigma{std::pow(N, -0.5)},
+            sigma{std::powf(N, -0.5F)},
             d{0.0, sigma} {
 
             }
@@ -30,7 +30,7 @@ class NormalDistribution {
 
         }
 
-    double operator() () {
+    float operator() () {
         return d(gen);
     }
 };

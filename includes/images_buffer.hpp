@@ -27,7 +27,7 @@ class ImagesBuffer {
                 if (std::getline(infile, line)) {
                     boost::split(vec, line, boost::is_any_of(delims));
 
-                    std::transform(vec.begin()+1, vec.end(), p.begin(), [](const std::string& p) -> double { return (double(std::stoi(p)) / 255.0 * 0.99) + 0.001; });
+                    std::transform(vec.begin()+1, vec.end(), p.begin(), [](const std::string& p) -> float { return (float(std::stoi(p)) / 255.0 * 0.99) + 0.001; });
 
                     int correct_label = std::stoi(vec[0]);
 

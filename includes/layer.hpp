@@ -14,13 +14,13 @@ class Layer {
 
         Vector<M> errors;
 
-        double learningrate;
+        float learningrate;
         
     public:
-        Layer(double learningrate) : learningrate{learningrate} {
+        Layer(float learningrate) : learningrate{learningrate} {
             weights.random();
         }
-        Layer(const std::string& filename, double learningrate) : learningrate{learningrate} {
+        Layer(const std::string& filename, float learningrate) : learningrate{learningrate} {
             weights.read(filename);
         }
 
