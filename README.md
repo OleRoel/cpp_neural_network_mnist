@@ -8,7 +8,16 @@ The MNIST datasets for training and testing the neural network can be found here
 The same training is performed with different flavours of the same code.
 
 ### BLAS
-Uses [BLAS](http://www.netlib.org/blas/) library for optimizing matrix operations with help of the cblas library.
+Uses [BLAS](http://www.netlib.org/blas/) library for optimizing matrix operations with help of the cblas library. The library has been installed via `brew install openblas`.
+
+### BLIS
+[BLIS](https://github.com/flame/blis) is a portable software framework for instantiating high-performance BLAS-like dense linear algebra libraries. The library has been cloned from github and then:
+
+```bash
+./configure --prefix=/usr/local --enable-cblas -t pthreads CFLAGS="-std=C11 -msse4.2 -mfpmath=sse -O3" CC=clang  auto
+make -j8
+sudo make install
+```
 
 ### MKL
 Uses [Intel® Math Kernel Library](https://software.intel.com/en-us/mkl) and their cblas library for matrix operations optimized against Intel processors.
@@ -21,6 +30,11 @@ Uses [NVIDIA CUDA](https://en.wikipedia.org/wiki/CUDA) and [NVIDIA cuBLAS](https
 **cblas:**
 ```sh
 clang++ mnist.cpp -I /usr/local/opt/openblas/include -lcblas -std=c++17 -msse4.2 -mfpmath=sse -pthread -O3 -DTARGET_CBLAS
+```
+
+**blis:**
+```sh
+clang++ mnist.cpp -I /usr/local/include/blis /usr/local/lib/libblis.a -std=c++17 -msse4.2 -mfpmath=sse -pthread -O3 -DTARGET_CBLAS
 ```
 
 **MKL:**
@@ -40,9 +54,10 @@ nvcc mnist_cublas.cu -lcublas -O3 -Xptxas -O3,-v
 ```
 
 ## Performance
-| Flavour    | Performance | Train Time [s] | Test Time [s] |
+|            | Performance | Train Time [s] | Test Time [s] |
 | ---------- |------------:| ---------------:|-------------:|
 | **cblas**  |      0.9668 |          37.192 |        0.200 |
+| **blis**   |      0.9667 |          17.471 |        0.122 |
 | **MKL**    |      0.9664 |          16.406 |        0.098 |
 | **cuBLAS** |      0.9624 |          66.196 |        0.735 |
 | **Python** |      0.9668 |         260.706 |        1.362 |
