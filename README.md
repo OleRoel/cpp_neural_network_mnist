@@ -8,7 +8,7 @@ The MNIST datasets for training and testing the neural network can be found here
 The same training is performed with different flavours of the same code.
 
 ### BLAS
-Uses [BLAS](http://www.netlib.org/blas/) library for optimizing matrix operations with help of the cblas library. The library has been installed via `brew install openblas`.
+Uses [BLAS](http://www.netlib.org/blas/) library for optimizing matrix operations with help of the cblas library. The library is preinstalled on my OS.
 
 ### BLIS
 [BLIS](https://github.com/flame/blis) is a portable software framework for instantiating high-performance BLAS-like dense linear algebra libraries. The library has been cloned from github and then:
@@ -29,7 +29,7 @@ Uses [NVIDIA CUDA](https://en.wikipedia.org/wiki/CUDA) and [NVIDIA cuBLAS](https
 
 **cblas:**
 ```sh
-clang++ mnist.cpp -I /usr/local/opt/openblas/include -lcblas -std=c++17 -msse4.2 -mfpmath=sse -pthread -O3 -DTARGET_CBLAS
+clang++ mnist.cpp -I /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers/ -lcblas -std=c++17 -msse4.2 -mfpmath=sse -pthread -O3 -DTARGET_CBLAS
 ```
 
 **blis:**
