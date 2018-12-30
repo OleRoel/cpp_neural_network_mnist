@@ -36,6 +36,11 @@ class Matrix : public Vector<M*N> {
             cblas_sger(CblasColMajor, M, N, factor, vec1, 1, vec2, 1, *this, M);
             return *this;
         }
+
+        void print(const std::string& name) const {
+            std::cout << "Matrix " << name << " has " << M << " rows and " << N << " columns:\n";
+            std::cout <<  *this << std::endl;
+        }
 };
 
 auto _sigmoid = [](auto d) { return (1.0 / (1.0 + std::exp(-d))); };
@@ -89,6 +94,9 @@ class Vector {
         const float* end() const { return &v[M]; }
         float* end()  { return &v[M]; }
 
+        float& operator[](std::size_t idx)       { return v[idx]; }
+        const float& operator[](std::size_t idx) const { return v[idx]; }
+
         Vector& minus(const Vector& vec) {
             cblas_saxpy(M, -1.0, vec, 1, v, 1);
             return *this;
@@ -130,8 +138,20 @@ class Vector {
             // cblas_scopy(N, v, 0, &vec[0], 0);
         }
 
+        inline void get(Vector& vec) const {
+            std::memcpy(vec.v, v, M*sizeof(float));
+            // cblas_scopy(N, v, 0, &vec[0], 0);
+        }
+
         inline Vector& set(const std::vector<float>& vec) {
             std::memcpy(v, &vec[0], M*sizeof(float));
+            // cblas_scopy(N, &vec[0], 0, v, 0);
+
+            return *this;
+        }
+
+        inline Vector& set(const Vector& vec) {
+            std::memcpy(v, vec.v, M*sizeof(float));
             // cblas_scopy(N, &vec[0], 0, v, 0);
 
             return *this;
@@ -170,21 +190,6 @@ class Vector {
             std::cout << name << ":\n" << *this << std::endl;
         }
 
-        void print(const std::string& name, int row, int column) const {
-            std::vector<float> matrix(M);
-            get(matrix);
-
-            std::cout << "Matrix " << name << " has " << row << " rows and " << column << " columns:\n";
-            for (int i = 0; i < row; i++){
-                for (int j = 0; j < column; j++) {
-                    // std::cout << '[' << i << ',' << j << ']'<< std::setw(6) << matrix[i*column + j] << " ";
-                    std::cout << std::setw(6) << matrix[i*column + j] << " ";
-                }
-                std::cout << '\n';
-            }
-            std::cout << std::endl;
-        }
-
         void read(const std::string& filename) {
             std::ifstream infile(filename);
             infile >> *this;
@@ -195,15 +200,30 @@ class Vector {
         }
 };
 
-template<int N> 
-std::ostream& operator << (std::ostream& os, const Vector<N>& obj)
+template<int M>
+std::ostream& operator << (std::ostream& os, const Vector<M>& obj)
 {
-    for (std::size_t i = 0; i < N; i++) {
+    for (std::size_t i = 0; i < M; i++) {
         os << obj[i] <<  ", ";
     }
 
     return os;
 }
+
+template<int M, int N>
+std::ostream& operator << (std::ostream& os, const Matrix<M, N>& obj)
+{
+    for (std::size_t i = 0; i < N; i++){
+        for (std::size_t j = 0; j < N; j++) {
+            // std::cout << '[' << i << ',' << j << ']'<< std::setw(6) << matrix[i*column + j] << " ";
+            std::cout << std::setw(6) << obj[i*M + j] << " ";
+        }
+        std::cout << '\n';
+    }
+
+    return os;
+}
+
 
 template<int N> 
 std::istream& operator >> (std::istream& is, Vector<N>& obj)
