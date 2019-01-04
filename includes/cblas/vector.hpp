@@ -143,6 +143,11 @@ class Vector {
             // cblas_scopy(N, v, 0, &vec[0], 0);
         }
 
+        inline void get(float vec[M]) const {
+            std::memcpy(vec, v, M*sizeof(float));
+            // cblas_scopy(N, v, 0, &vec[0], 0);
+        }
+
         inline Vector& set(const std::vector<float>& vec) {
             std::memcpy(v, &vec[0], M*sizeof(float));
             // cblas_scopy(N, &vec[0], 0, v, 0);
@@ -157,7 +162,7 @@ class Vector {
             return *this;
         }
 
-        inline Vector& set(const float vec[10]) {
+        inline Vector& set(const float vec[M]) {
             std::memcpy(v, vec, M*sizeof(float));
 
             return *this;
